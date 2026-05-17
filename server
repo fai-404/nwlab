@@ -1,0 +1,81 @@
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main() {
+    int server_socket, client_socket, result;
+    char message[100];
+    struct sockaddr_in address;
+
+    // create socket
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_socket == -1) {
+        printf("Error creating socket\n");
+        exit(1);
+    }
+
+    // set address
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = inet_addr("127.0.0.1");
+    address.sin_port = 3002;
+
+    // bind
+    result = bind(server_socket, (struct sockaddr*)&address, sizeof(address));
+    if (result == -1) {
+        printf("Error in bind\n");
+        exit(1);
+    }
+
+    // listen
+    result = listen(server_socket, 1);
+    if (result == -1) {
+        printf("Error in listen\n");
+        exit(1);
+    }
+
+    printf("Server waiting for connection...\n");
+
+    // accept
+    client_socket = accept(server_socket, NULL, NULL);
+    if (client_socket == -1) {
+        printf("Error in accept\n");
+        exit(1);
+    }
+
+    printf("Client connected!\n");
+
+    // communication loop
+    while (1) {
+        // receive from client
+        result = recv(client_socket, message, 100, 0);
+        if (result == -1) {
+            printf("Error in receiving\n");
+            exit(1);
+        }
+
+        printf("Client: %s", message);
+
+        // take input from server side
+        printf("Enter message to send: ");
+        fgets(message, 100, stdin);
+
+        // check before sending
+        if (strncmp(message, "end", 3) == 0)
+            break;
+
+        // send to client
+        result = send(client_socket, message, 100, 0);
+        if (result == -1) {
+            printf("Error in sending\n");
+            exit(1);
+        }
+    }
+
+    close(client_socket);
+    close(server_socket);
+
+    return 0;
+}
