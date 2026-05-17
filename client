@@ -1,0 +1,64 @@
+#include <stdio.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main() {
+    int client_socket, result;
+    char message[100];
+    struct sockaddr_in address;
+
+    // create socket
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+    if (client_socket == -1) {
+        printf("Error creating socket\n");
+        exit(1);
+    }
+
+    // set server address
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = inet_addr("127.0.0.1");
+    address.sin_port = 3002;
+
+    // connect
+    result = connect(client_socket, (struct sockaddr*)&address, sizeof(address));
+    if (result == -1) {
+        printf("Error connecting to server\n");
+        exit(1);
+    }
+
+    printf("Connected to server!\n");
+
+    // communication loop
+    while (1) {
+        // take input from client side
+        printf("Enter message to send: ");
+        fgets(message, 100, stdin);
+
+        // check before sending
+        if (strncmp(message, "end", 3) == 0)
+            break;
+
+        // send to server
+        result = send(client_socket, message, 100, 0);
+        if (result == -1) {
+            printf("Error in sending\n");
+            exit(1);
+        }
+
+        // receive reply
+        result = recv(client_socket, message, 100, 0);
+        if (result == -1) {
+            printf("Error in receiving\n");
+            exit(1);
+        }
+
+        printf("Server: %s", message);
+    }
+
+    close(client_socket);
+
+    return 0;
+}
